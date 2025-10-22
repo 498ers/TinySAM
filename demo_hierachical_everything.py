@@ -23,7 +23,7 @@ sys.path.append("..")
 from tinysam import sam_model_registry, SamHierarchicalMaskGenerator
 
 model_type = "vit_t"
-sam = sam_model_registry[model_type](checkpoint="./weights/tinysam.pth")
+sam = sam_model_registry[model_type](checkpoint="./weights/tinysam_42.3.pth")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 sam.to(device=device)
 sam.eval()
