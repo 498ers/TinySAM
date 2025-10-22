@@ -28,7 +28,7 @@ def show_box(box, ax):
 sys.path.append("./tinysam")
 
 cpt_path = "weights/tinysam_w8a8.pth"
-quant_sam = torch.load(cpt_path, map_location='cpu') 
+quant_sam = torch.load(cpt_path, map_location='cpu', weights_only=False) 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 quant_sam.to(device=device)                                 
 predictor = SamPredictor(quant_sam)

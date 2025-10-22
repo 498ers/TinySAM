@@ -7,6 +7,9 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+venv/
+env/
+ENV/
 
 # macOS
 .DS_Store
