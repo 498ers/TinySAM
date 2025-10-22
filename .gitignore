@@ -34,3 +34,9 @@ eval/json_files/*.json
 *.log
 *.tmp
 
+# Demo outputs
+test.png
+test_*.png
+demo_*.png
+*_output.png
+
