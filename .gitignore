@@ -20,6 +20,7 @@ ENV/
 data/
 weights/*.pth
 *.pth
+*.pt
 
 # COCO evaluation files
 eval/json_files/*.json
