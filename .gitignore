@@ -41,3 +41,10 @@ test_*.png
 demo_*.png
 *_output.png
 
+# Demo and evaluation directories/files
+demo/
+eval/coco_res_tinysam.json
+comparison_*.png
+comparison_*.json
+evaluation_*.json
+
