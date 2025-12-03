@@ -10,6 +10,15 @@ This repository extends **TinySAM** with **YOLO integration** to achieve **77x f
 - **Efficiency**: 77.5x better speed-quality trade-off
 - **Model Size**: Only 13.29M parameters (YOLOv8n 3.16M + TinySAM 10.13M)
 
+### Visual Results
+
+Our hierarchical pipeline combines YOLO detection with TinySAM segmentation in two layers:
+
+<div align="center">
+  <img src="fig/yolo_hierarchical_demo.png" alt="YOLO + Hierarchical TinySAM Demo" width="100%">
+  <p><i>Demonstration of our two-layer hierarchical segmentation: (Top-left) YOLO detects 9 objects, (Top-right) High-confidence masks from box prompts, (Bottom-left) Low-confidence sampling with 35 dense points, (Bottom-right) Combined result with 9 high-quality + 3 low-confidence masks covering the entire scene.</i></p>
+</div>
+
 ## Quick Start
 
 ### Installation
