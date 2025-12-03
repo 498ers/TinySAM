@@ -186,154 +186,156 @@ If you use this work, please cite:
 
 ## COCO Standard Evaluation
 
-我们提供了使用 **COCO 官方评估指标**来评估不同方法的脚本，与论文中的 TinySAM (AP=42.3%) 进行公平对比。
+We provide scripts for evaluating different methods using **official COCO evaluation metrics**, enabling fair comparison with TinySAM (AP=42.3%) reported in the paper.
 
-### 评估方法对比
+### Method Comparison
 
-| 方法 | 检测器 | 分割策略 | COCO AP | 速度 | 文件 |
-|------|--------|----------|---------|------|------|
-| **TinySAM (论文)** | ViTDet | 单框→3候选mask | 42.3% | 慢 | - |
-| **YOLO+SAM (单层)** | YOLO v8n | 单框→3候选mask | 10.7% ❌ | 快 | `eval_yolo_sam_coco.py` (已删除) |
-| **YOLO+Hierarchical SAM** | YOLO v12-turbo | 双层(框+点) | ??% 🎯 | 中等 | `eval_yolo_hierarchical_coco.py` |
+| Method | Detector | Segmentation Strategy | COCO AP | Speed | File |
+|--------|----------|----------------------|---------|-------|------|
+| **TinySAM (Paper)** | ViTDet | Single box → 3 candidate masks | 42.3% | Slow | - |
+| **YOLO+SAM (Single-layer)** | YOLO v8n | Single box → 3 candidate masks | 10.7% ❌ | Fast | `eval_yolo_sam_coco.py` (deleted) |
+| **YOLO+Hierarchical SAM** | YOLO v12-turbo | Two-layer (box + points) | ??% 🎯 | Medium | `eval_yolo_hierarchical_coco.py` |
 
-### 方法 1：YOLO v8n + TinySAM（单层）⚠️
+### Method 1: YOLO v8n + TinySAM (Single-layer) ⚠️
 
-**结果：AP = 10.7%**（已运行）
+**Result: AP = 10.7%** (already tested)
 
-**问题诊断**：
-- ❌ YOLO漏检了26%的物体（Recall只有62%）
-- ❌ 3个类别完全未检测到
-- ❌ 某些类别检测率极低（如book漏检83%）
+**Problem Diagnosis**:
+- ❌ YOLO missed 26% of objects (Recall only 62%)
+- ❌ 3 categories completely undetected
+- ❌ Some categories have extremely low detection rates (e.g., book missed 83%)
 
-**结论**：单层YOLO方法不适合COCO评估，因为召回率太低。
+**Conclusion**: Single-layer YOLO method is not suitable for COCO evaluation due to low recall.
 
 ---
 
-### 方法 2：YOLO v12-turbo + Hierarchical TinySAM（双层）🎯
+### Method 2: YOLO v12-turbo + Hierarchical TinySAM (Two-layer) 🎯
 
-这是我们推荐的评估方法！
+This is our recommended evaluation method!
 
-#### 架构说明
+#### Architecture Overview
 
 ```
-输入图片
+Input Image
     ↓
 ┌───────────────────────────────────┐
-│ 双层分割架构                       │
+│ Two-Layer Segmentation Architecture│
 ├───────────────────────────────────┤
 │                                   │
-│  高置信度层（主要物体）             │
-│  ├─ YOLO v12-turbo 检测           │
+│  High-Confidence Layer (Main Objects)│
+│  ├─ YOLO v12-turbo Detection      │
 │  ├─ BOX prompts → TinySAM        │
-│  └─ 精确分割主要物体               │
+│  └─ Precise segmentation of main objects│
 │                                   │
-│  低置信度层（背景区域）             │
-│  ├─ 16×16 密集点采样(YOLO框外)    │
+│  Low-Confidence Layer (Background)│
+│  ├─ 16×16 Dense Point Sampling    │
+│     (outside YOLO boxes)          │
 │  ├─ Point prompts → TinySAM      │
-│  └─ 补充分割背景和小物体           │
+│  └─ Supplement background & small │
+│     object segmentation           │
 │                                   │
 └───────────────────────────────────┘
     ↓
-合并结果 + 过滤重叠
+Merge Results + Filter Overlaps
     ↓
-COCO AP 评估
+COCO AP Evaluation
 ```
 
-#### 关键配置
+#### Key Configuration
 
 ```python
-YOLO_MODEL = "yolo12-turbo.pt"   # 更快更准的检测器
-YOLO_CONF_HIGH = 0.25            # 高置信度阈值
-POINTS_PER_SIDE = 16             # 16×16 = 256个密集采样点
-OVERLAP_THRESHOLD = 0.5          # 过滤重叠区域
+YOLO_MODEL = "yolo12-turbo.pt"   # Faster and more accurate detector
+YOLO_CONF_HIGH = 0.25            # High confidence threshold
+POINTS_PER_SIDE = 16             # 16×16 = 256 dense sampling points
+OVERLAP_THRESHOLD = 0.5          # Overlap filtering threshold
 ```
 
-#### 运行评估
+#### Running Evaluation
 
-**本地测试（单张图）**：
+**Local Test (Single Image)**:
 ```bash
 python tinyyolosam/demo_yolo_hierarchical_box4.py
 ```
 
-**完整COCO评估（云端推荐）**：
+**Full COCO Evaluation (Cloud Recommended)**:
 ```bash
-# 安装依赖
+# Install dependencies
 pip install ultralytics pycocotools
 
-# 运行评估（预计1.5-2小时@GPU）
+# Run evaluation (estimated 1.5-2 hours @GPU)
 python eval_yolo_hierarchical_coco.py
 ```
 
-**输出**：
-- `eval/yolo_hierarchical_coco_results.json` - COCO格式预测结果
-- 标准COCO AP指标打印
-- 与论文TinySAM的详细对比
+**Output**:
+- `eval/yolo_hierarchical_coco_results.json` - COCO format prediction results
+- Standard COCO AP metrics printed
+- Detailed comparison with paper TinySAM
 
-#### 预期结果
+#### Expected Results
 
-基于我们的分析：
-- **预期 AP**: 30-40%
-- **优势**: 
-  - ✅ 比单层YOLO方法高2-3倍（10.7% → 30-40%）
-  - ✅ 16×16密集点提高背景区域覆盖率
-  - ✅ YOLO v12-turbo 检测质量更好
-  - ✅ 速度比ViTDet快得多
-- **挑战**:
-  - ⚠️ 低置信度区域类别难确定（当前用默认类别）
-  - ⚠️ 密集点采样增加计算时间
-  - ⚠️ 仍可能低于原始TinySAM的42.3%
+Based on our analysis:
+- **Expected AP**: 30-40%
+- **Advantages**: 
+  - ✅ 2-3x higher than single-layer YOLO method (10.7% → 30-40%)
+  - ✅ 16×16 dense points improve background coverage
+  - ✅ YOLO v12-turbo provides better detection quality
+  - ✅ Much faster than ViTDet
+- **Challenges**:
+  - ⚠️ Category assignment for low-confidence regions is difficult (currently using default category)
+  - ⚠️ Dense point sampling increases computation time
+  - ⚠️ May still be lower than original TinySAM's 42.3%
 
-#### 调优参数
+#### Tuning Parameters
 
-提高召回率：
+Improve Recall:
 ```python
-YOLO_CONF_HIGH = 0.15      # 降低阈值
-POINTS_PER_SIDE = 24       # 更密集采样
+YOLO_CONF_HIGH = 0.15      # Lower threshold
+POINTS_PER_SIDE = 24       # Denser sampling
 ```
 
-提高精度：
+Improve Precision:
 ```python
-YOLO_CONF_HIGH = 0.35      # 提高阈值
-OVERLAP_THRESHOLD = 0.3    # 更严格过滤
+YOLO_CONF_HIGH = 0.35      # Higher threshold
+OVERLAP_THRESHOLD = 0.3    # Stricter filtering
 ```
 
-平衡速度：
+Balance Speed:
 ```python
-POINTS_PER_SIDE = 12       # 减少采样点
+POINTS_PER_SIDE = 12       # Fewer sampling points
 ```
 
 ---
 
-### COCO 评估指标说明
+### COCO Evaluation Metrics Explanation
 
-#### 主要指标（论文中使用）
+#### Main Metrics (Used in Papers)
 
-| 指标 | 含义 | TinySAM论文 |
-|------|------|-------------|
-| **AP @IoU=0.50:0.95** | 多个IoU阈值的平均精度（主要指标）| 42.3% |
-| AP @IoU=0.50 | 宽松评估（IoU>0.5就算对）| - |
-| AP @IoU=0.75 | 严格评估（IoU>0.75才算对）| - |
-| AP (small) | 小物体（面积<32²）| 26.3% |
-| AP (medium) | 中等物体（32²<面积<96²）| 45.8% |
-| AP (large) | 大物体（面积>96²）| 58.8% |
+| Metric | Description | TinySAM Paper |
+|--------|-------------|---------------|
+| **AP @IoU=0.50:0.95** | Average Precision across multiple IoU thresholds (main metric) | 42.3% |
+| AP @IoU=0.50 | Loose evaluation (correct if IoU > 0.5) | - |
+| AP @IoU=0.75 | Strict evaluation (correct only if IoU > 0.75) | - |
+| AP (small) | Small objects (area < 32²) | 26.3% |
+| AP (medium) | Medium objects (32² < area < 96²) | 45.8% |
+| AP (large) | Large objects (area > 96²) | 58.8% |
 
-#### 文件说明
+#### File Structure
 
 ```
 eval/json_files/
-├── instances_val2017.json              # Ground Truth（36,781个标注）
-├── coco_instances_results_vitdet.json  # ViTDet检测框（92,850个）
-└── coco_res_tinysam.json              # 原始TinySAM预测（92,850个）
+├── instances_val2017.json              # Ground Truth (36,781 annotations)
+├── coco_instances_results_vitdet.json  # ViTDet detection boxes (92,850)
+└── coco_res_tinysam.json              # Original TinySAM predictions (92,850)
 
-data/val2017/                           # COCO验证集图片（5,000张）
+data/val2017/                           # COCO validation images (5,000)
 
-eval_yolo_hierarchical_coco.py          # 评估脚本
-eval/yolo_hierarchical_coco_results.json # 输出结果
+eval_yolo_hierarchical_coco.py          # Evaluation script
+eval/yolo_hierarchical_coco_results.json # Output results
 ```
 
 ---
 
-### 云端运行配置（Great Lakes）
+### Cloud Configuration (Great Lakes)
 
 ```
 Python: python3.11-anaconda/2024.02
@@ -346,21 +348,21 @@ Hours: 4
 
 **Jupyter Notebook**:
 ```python
-# Cell 1: 安装依赖
+# Cell 1: Install dependencies
 !pip install ultralytics pycocotools
 
-# Cell 2: 运行评估
+# Cell 2: Run evaluation
 !python eval_yolo_hierarchical_coco.py
 ```
 
 ---
 
-### 为什么需要 COCO 评估？
+### Why COCO Evaluation?
 
-1. **与论文对比**：使用相同指标（AP @IoU=0.50:0.95）
-2. **标准化评估**：COCO是实例分割的标准benchmark
-3. **公平比较**：相同数据集、相同Ground Truth、相同评估工具
-4. **端到端评估**：评估整个系统（检测+分割），不是孤立评估分割质量
+1. **Paper Comparison**: Using the same metrics (AP @IoU=0.50:0.95)
+2. **Standardized Evaluation**: COCO is the standard benchmark for instance segmentation
+3. **Fair Comparison**: Same dataset, same Ground Truth, same evaluation tools
+4. **End-to-End Evaluation**: Evaluates the entire system (detection + segmentation), not just segmentation quality in isolation
 
 ## License
 
