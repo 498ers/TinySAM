@@ -27,49 +27,59 @@ wget https://github.com/xinghaochen/TinySAM/releases/download/3.0/tinysam_42.3.p
 
 ### Basic Usage
 ```bash
-# Optimized pipeline (box prompts + batching)
-python demo_yolo_hierarchical_optimized.py
+# Basic YOLO + TinySAM with box prompts
+python tinyyolosam/demo_yolo_tinysam.py
+
+# Hierarchical segmentation with box prompts
+python tinyyolosam/demo_yolo_hierarchical_box4.py
 
 # Performance evaluation
-python eval_yolo_vs_hierarchical.py
+python eval_yolo_vs_hierarchical_simple.py
 ```
 
 ## Demo Scripts
 
-### 1. Optimized YOLO + TinySAM (Recommended)
-```bash
-python demo_yolo_hierarchical_optimized.py
-```
-- **Method**: Box prompts instead of point prompts
-- **Features**: Batch processing, highest efficiency
-- **Performance**: Mean IoU 0.933, 48.1 ms/object
-- **Best for**: Production use, fastest results
+All demo scripts are located in the `tinyyolosam/` directory.
 
-### 2. Point-Based YOLO + TinySAM
+### 1. Basic YOLO + TinySAM (Fastest)
 ```bash
-python demo_yolo_hierarchical.py
+python tinyyolosam/demo_yolo_tinysam.py
 ```
-- **Method**: 9-point grid sampling inside YOLO boxes
-- **Features**: Higher precision than box prompts
-- **Performance**: More accurate boundaries
+- **Method**: YOLO detection + TinySAM with box prompts only
+- **Features**: Simplest pipeline, fastest execution
+- **Performance**: ~2.5 FPS, Mean IoU ~0.85
+- **Best for**: Quick testing, real-time applications
+
+### 2. Hierarchical with Box Prompts (Recommended)
+```bash
+python tinyyolosam/demo_yolo_hierarchical_box4.py
+```
+- **Method**: Two-layer segmentation (YOLO boxes + dense points)
+- **Features**: High-confidence (box prompts) + low-confidence (point prompts) regions
+- **Performance**: Mean IoU 0.933, comprehensive scene coverage
+- **Best for**: Production use, balancing speed and quality
+
+### 3. Hierarchical with Point Prompts (Most Precise)
+```bash
+python tinyyolosam/demo_yolo_hierarchical_point3.py
+# or
+python tinyyolosam/demo_yolo_hierarchical_point4.py
+```
+- **Method**: 9-point grid sampling inside YOLO boxes + dense background points
+- **Features**: Higher precision boundaries than box prompts
+- **Performance**: More accurate segmentation edges
 - **Best for**: When segmentation precision is critical
-
-### 3. Complete Hierarchical Pipeline
-```bash
-python demo_yolo_hierarchical_full.py
-```
-- **Method**: High-confidence (inside boxes) + low-confidence (outside boxes) regions
-- **Features**: Full scene coverage, mimics hierarchical everything
-- **Performance**: 77x faster than original hierarchical approach
-- **Best for**: Complete scene segmentation
 
 ### 4. Performance Evaluation
 ```bash
-# Generate paper-ready metrics
-python eval_for_paper.py
+# Compare YOLO method vs Hierarchical Everything
+python eval_yolo_vs_hierarchical_simple.py
 
-# Compare methods with visualization
-python eval_yolo_vs_hierarchical.py
+# Generate paper-ready metrics
+python legacy/paper/eval_for_paper.py
+
+# Full COCO evaluation
+python eval_yolo_hierarchical_coco.py
 ```
 
 ## Technical Details
@@ -141,10 +151,11 @@ predictor.predict(box=boxes[0][None, :])  # Direct usage - perfect alignment!
 ## Generated Files
 
 After running evaluation scripts:
-- `comparison_results.json` - Detailed performance data
-- `evaluation_results.json` - Complete metrics for paper
+- `comparison_results.json` - Detailed performance data (from `eval_yolo_vs_hierarchical_simple.py`)
 - `comparison_yolo_vs_hierarchical.png` - 6-panel comparison charts
-- Output visualizations for each demo
+- `legacy/paper/evaluation_results.json` - Complete metrics for paper
+- `eval/yolo_tinysam_coco_results.json` - COCO evaluation results
+- `tinyyolosam/*_output.png` - Output visualizations from each demo
 
 ## Requirements
 
@@ -166,9 +177,9 @@ This work builds on **TinySAM: Pushing the Envelope for Efficient Segment Anythi
 
 **Original usage:**
 ```bash
-python demo.py  # Point/box prompts
-python demo_hierachical_everything.py  # Original hierarchical approach
-python demo_quant.py  # Quantized version
+python demo/demo.py  # Point/box prompts
+python demo/demo_hierachical_everything.py  # Original hierarchical approach
+python demo/demo_quant.py  # Quantized version
 ```
 
 ## Citation
